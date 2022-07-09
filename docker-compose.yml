@@ -1,0 +1,59 @@
+version: "3"
+services:
+  postgres: #try to start something called postgres as service
+    image: "postgres:latest" #with the latest postgres image
+    environment:
+      - POSTGRES_PASSWORD=postgres_password
+  redis:
+    image: "redis:latest"
+  nginx:
+    depends_on:
+      - api
+      - client
+    restart: always #it should always be running as it routs all the data
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports: 
+      - "3050:80" #3050 is a random empty port on our computer, access port 3050 on localhost
+  api:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./server #specify directory
+    volumes: 
+      #VOLUMES HERE
+      #what this means is that any time our application tries to access anything inside of the app
+      #directory inside the server container (expect for node_modules folder)
+      #it is going to be redirected back to the server directory
+      #so now that any time we make a change to anything inside that server it will
+      #automatically be refelcted inside of the app folder in the server container
+      #so we dont have to rebuild anything everytime we make a small change to the source code
+      - /app/node_modules #app is our workdir for server in container and we don't want to overrid node_modules
+      - ./server/:/app #copy everything inside server folder into app folder
+    environment: #------------------------------------
+      - REDIS_HOST=redis #redis is the redis service
+      - REDIS_PORT=6379
+      - PGUSER=postgres 
+      - PGHOST=postgres
+      - PGDATABASE=postgres 
+      - PGPASSWORD=postgres_password 
+      - PGPORT=5432
+  client:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      - /app/node_modules #bookmark /app/node_modules so it does not get overwritten
+      - ./client:/app #relationship between the client dir and app dir in container, share everything in ./client with the app folder 
+    environment:
+      - WDS_SOCKET_PORT=0
+  worker:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    volumes:
+      - /app/node_modules
+      - ./worker:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
