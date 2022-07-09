@@ -1,0 +1,21 @@
+sudo: required
+language: generic
+services:
+  #build test version which allows us to run tests
+  - docker build -t vorbrodt/react-test -f ./client/Dockerfile.dev ./client
+script:
+  #-- --coverage is to exit npm test and finishes
+  - docker run -e CI=true vorbrodt/react-test npm test -- --coverage
+after_success:
+  - docker build -t vorbrodt/multi-client ./client
+  - docker build -t vorbrodt/multi-nginx ./nginx
+  - docker build -t vorbrodt/multi-server ./server
+  - docker build -t vorbrodt/multi-worker ./worker
+  #take images and push them to docker hub, to do that we first have to login
+  #login to docker CLI
+  - echo "$DOCKER_PASSWORD" | docker login -u "DOCKER_ID" --password-stdin
+  #take images an push them to docker hub
+  - docker push vorbrodt/multi-client
+  - docker push vorbrodt/multi-nginx
+  - docker push vorbrodt/multi-server
+  - docker push vorbrodt/multi-worker
