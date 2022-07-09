@@ -21,3 +21,15 @@ after_success:
   - docker push vorbrodt/multi-nginx
   - docker push vorbrodt/multi-server
   - docker push vorbrodt/multi-worker
+
+deploy:
+  provider: elasticbeanstalk
+  region: "eu-north-1"
+  app: "docker-multi-container"
+  env: "Dockermulticontainer-env"
+  bucket_name: "elasticbeanstalk-eu-north-1-355767558195"
+  bucket_path: "docker-multi-container"
+  on:
+    branch: main
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY
